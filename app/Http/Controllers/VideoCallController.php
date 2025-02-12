@@ -19,4 +19,13 @@ class VideoCallController extends Controller
         
         return response()->json($user);
     }
+
+    public function requestVideoCallStatus(Request $request, User $user)
+    {
+        $user->peerId = $request->peerId;
+        $user->fromUser = Auth::user();
+
+        broadcast(new RequestVideoCallStatus($user));
+        return response()->json($user);
+    }
 }
