@@ -15,11 +15,16 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('peerId')->nullable();
+            $table->unsignedBigInteger('fromUser')->nullable(); // Changed to unsignedBigInteger
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
+            
+            $table->foreign('fromUser')->references('id')->on('users')->onDelete('set null');
         });
+        
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
