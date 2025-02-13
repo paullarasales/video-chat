@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('video_call_participants', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('video_call_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }
