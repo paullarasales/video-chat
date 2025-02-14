@@ -44,27 +44,45 @@ class VideoCallController extends Controller
 
     public function startCall(Request $request)
     {
-        broadcast(new VideoCallStarted(Auth::user()));
-        return response()->json(['message' => 'Call started']);
+        $userId = auth()->user()->id;
+
+        $class = VideoCall::create([
+            'host_id' => $userId,
+            'room_id' => uniqid(),
+            'status' => 'ongoing'
+        ]);
+
+        $peerId = $request->peerId;
+        $class->update(['host_peer_id' => $peerId]);
+
+        broadcast(new ClassStartedEvent($userId));
+
+        return response()->json([
+            'message' => 'Class has started successfully',
+            'classStarted' => true,
+        ]);
     }
 
     public function joinCall(Request $request)
     {
         $request->validate([
-            'room_id' => 'required|exists:video_calls,room_id',
             'user_id' => 'required|exists:users,id',
         ]);
 
+        $ongoingClass = VideoCall::where('status', 'ongoing')->first();
+
+        if (!$ongoingClass) {
+            return response()->json(['message' => 'No ongoing class to join'], 400);
+        }
+
         VideoCallParticipant::create([
-            'video_call_id' => VideoCall::where('room_id', $request->room_id)->first()->id,
+            'video_call_id' => $ongoingClass->id,
             'user_id' => $request->user_id,
         ]);
 
-        broadcast(new VideoCallEvent($request->room_id, $request->user()));
-
         return response()->json([
-            'message' => 'Joined call',
-            'room_id' => $request->room_id,
+            'message' => 'You have joined the class!',
+            'room_id' => $ongoingClass->room_id,
         ]);
     }
 
@@ -109,7 +127,7 @@ class VideoCallController extends Controller
         $ongoingClass = VideoCall::where('status', 'ongoing')->exists();
 
         return response()->json([
-            'classStarted' => $ongoinClass,
+            'classStarted' => $ongoingClass,
             'message' => $ongoingClass ? 'An ongoing class is available. Join now!' : 'No class is ongoing.',
         ]);
     }
