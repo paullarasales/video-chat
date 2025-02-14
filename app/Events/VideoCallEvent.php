@@ -5,34 +5,29 @@ namespace App\Events;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class VideoCallEvent
+class VideoCallEvent implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use InteractsWithSockets, SerializesModels;
 
-    public $roomId;
     public $user;
+    public $action;
 
-    /**
-     * Create a new event instance.
-     */
-    public function __construct($roomId, $user)
+    public function __construct($user, $action)
     {
-        $this->roomId = $roomId;
         $this->user = $user;
+        $this->action = $action;
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
     public function broadcastOn()
     {
-        return new PresenceChannel('video-call.' . $this->roomId);
+        return new PresenceChannel('video-call');
+    }
+
+    public function broadcastAs()
+    {
+        return 'video.call';
     }
 }

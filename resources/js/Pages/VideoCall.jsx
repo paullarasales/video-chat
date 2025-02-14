@@ -1,79 +1,71 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Peer from 'peerjs';  // Import Peerjs for WebRTC
-import { Inertia } from '@inertiajs/inertia';
+import React, { useState, useRef, useEffect } from 'react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
-const VideoCall = ({ users }) => {
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [isCalling, setIsCalling] = useState(false);
-    const [isReceivingCall, setIsReceivingCall] = useState(false);
-    const [peer, setPeer] = useState(null);
-    const [myStream, setMyStream] = useState(null);
+const VideoCall = ({ authUserId, classStarted, message }) => {
+    const [isClassStarted, setIsClassStarted] = useState(classStarted || false);
+    const [statusMessage, setStatusMessage] = useState(message || '');
+    const videoRef = useRef(null);
 
-    const myVideo = useRef(null);
-    const theirVideo = useRef(null);
+    const handleStartClass = async () => {
+        try {
+            const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
 
-    useEffect(() => {
-        const peerInstance = new Peer();
-        setPeer(peerInstance);
+            console.log("CSRF Token:", csrfToken); // Debug log
 
-        peerInstance.on('open', (id) => {
-            console.log("My peer ID is " + id);
-        });
-
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            .then((stream) => {
-                setMyStream(stream);
-                if (myVideo.current) {
-                    myVideo.current.srcObject = stream;
-                }
-            }).catch((err) => console.error("Failed to get media stream:", err));
-
-        peerInstance.on('call', (incomingCall) => {
-            setIsReceivingCall(true);
-            incomingCall.answer(myStream);
-            incomingCall.on('stream', (remoteStream) => {
-                if (theirVideo.current) {
-                    theirVideo.current.srcObject = remoteStream;
-                }
-            });
-        });
-
-        return () => {
-            if (peerInstance) peerInstance.destroy();
-        };
-    }, []);
-
-    const startCall = (user) => {
-        setIsCalling(true);
-        const call = peer.call(user.peerId, myStream);
-        call.on('stream', (remoteStream) => {
-            if (theirVideo.current) {
-                theirVideo.current.srcObject = remoteStream;
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
             }
-        });
 
-        // Post the data to Laravel (Ensure the route is correct)
-        Inertia.post(route('video-call.request', { user: user.id }), {
-            peerId: peer.id,
-        });
+            const response = await fetch('/start-call', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to start class');
+            }
+
+            const data = await response.json();
+
+            setIsClassStarted(true);
+            setStatusMessage(data.message);
+
+            startCamera(); // Start the camera after starting the class
+        } catch (error) {
+            console.error('Error starting the class:', error);
+        }
+    };
+
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (error) {
+            console.error('Error accessing the camera:', error);
+        }
     };
 
     return (
-        <div>
-            <video ref={myVideo} autoPlay muted />
-            <video ref={theirVideo} autoPlay />
+        <AuthenticatedLayout>
             <div>
-                <h3>Contacts</h3>
-                <ul>
-                    {users.map((user) => (
-                        <li key={user.id}>
-                            {user.name}
-                            <button onClick={() => startCall(user)}>Call</button>
-                        </li>
-                    ))}
-                </ul>
+                <h1>Video Call</h1>
+                {!isClassStarted ? (
+                    <div>
+                        <button onClick={handleStartClass}>Start Class</button>
+                    </div>
+                ) : (
+                    <div>
+                        <p>{statusMessage}</p>
+                        <video ref={videoRef} autoPlay playsInline style={{ width: '100%', maxWidth: '600px', border: '1px solid black' }}></video>
+                    </div>
+                )}
             </div>
-        </div>
+        </AuthenticatedLayout>
     );
 };
 

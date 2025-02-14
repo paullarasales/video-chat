@@ -36,6 +36,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Contacts
                                 </NavLink>
+                                <NavLink
+                                    href={route('video-call')}
+                                    active={route().current('video-call')}
+                                >
+                                    Video Call
+                                </NavLink>
                             </div>
                         </div>
 
