@@ -25,7 +25,37 @@ class VideoCallController extends Controller
 
     public function startClass(Request $request)
     {   
-       
+       $request->validate([
+            'host_peer_id' => 'required|string',
+       ]);
+
+       $userId = auth()->user()->id;
+
+       $existingClass = VideoCall::where('host_id', $userId)->where('status', 'ongoing')->first();
+
+       if ($existingClass) {
+            return response()->json([
+                'message' => 'Class is already ongoing',
+                'classStarted' => true,
+                'hostPeerId' => $existingClass->host_peer_id,
+                'roomId' => $existingClass->room_id,
+            ]);
+       }
+
+       $roomId = uniqid();
+       $class = VideoCall::create([
+            'host_id' => $userId,
+            'host_peer_id' => $request->host_peer_id,
+            'room_id' => $roomId,
+            'status' => 'ongoing',
+       ]);
+
+       return response()->json([
+            'message' => 'Class has started successfully',
+            'classStarted' => true,
+            'hostPeerId' => $class->host_peer_id,
+            'roomId' => $class->room_id,
+       ]);
     }
 
     public function joinCall(Request $request)

@@ -1,149 +1,87 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Peer from "peerjs";
+import axios from "axios";
 
-const VideoCall = ({ authUserId }) => {
-    const [peer, setPeer] = useState(null);
+const VideoCall = () => {
     const [isClassStarted, setIsClassStarted] = useState(false);
-    const [statusMessage, setStatusMessage] = useState("");
+    const [isHost, setIsHost] = useState(false);
     const [remotePeerId, setRemotePeerId] = useState(null);
-    const [isHost, setIsHost] = useState(false); // New state to track if the user is the host
+    const [peer, setPeer] = useState(null);
+    const [roomId, setRoomId] = useState(null);
+    const [statusMessage, setStatusMessage] = useState("");
+
     const videoRef = useRef(null);
     const remoteVideoRef = useRef(null);
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
     useEffect(() => {
-        const newPeer = new Peer(); // Initialize PeerJS
+        const newPeer = new Peer();
         setPeer(newPeer);
 
-        // When this user receives a call, answer with their own stream
-        newPeer.on("call", (call) => {
-            navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
-                call.answer(stream); // Answer with local stream
-                call.on("stream", (remoteStream) => {
-                    remoteVideoRef.current.srcObject = remoteStream;
-                });
-            });
+        newPeer.on("open", (id) => {
+            console.log("Peer connected with ID:", id);
         });
 
-        // Destroy Peer instance when component unmounts
+        newPeer.on("call", (call) => {
+            navigator.mediaDevices
+                .getUserMedia({ video: true, audio: true })
+                .then((stream) => {
+                    videoRef.current.srcObject = stream;
+                    call.answer(stream);
+                    call.on("stream", (remoteStream) => {
+                        remoteVideoRef.current.srcObject = remoteStream;
+                    });
+                })
+                .catch((error) => console.error("Error accessing media:", error));
+        });
+
         return () => newPeer.destroy();
     }, []);
 
-    const startCamera = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            videoRef.current.srcObject = stream;
-            return stream;
-        } catch (error) {
-            console.error("Error accessing camera:", error);
-        }
-    };
-
     const handleStartClass = async () => {
         try {
-            peer.on("open", async (id) => {
-                console.log("Host Peer ID:", id);
+            if (!peer) return;
+            setIsHost(true);
+            setStatusMessage("Starting class...");
 
-                const response = await fetch("/start-class", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": csrfToken,
-                    },
-                    body: JSON.stringify({ host_peer_id: id }),
-                });
-
-                if (!response.ok) throw new Error("Failed to start class");
-
-                const data = await response.json();
-                setIsClassStarted(true);
-                setStatusMessage(data.message);
-
-                // Start the host's camera
-                const stream = await startCamera();
-                videoRef.current.srcObject = stream;
-                setIsHost(true);
-
-                // Host starts calling participants (if any)
-                if (data.participantPeerIds) {
-                    data.participantPeerIds.forEach((participantPeerId) => {
-                        const call = peer.call(participantPeerId, stream);
-                        call.on("stream", (remoteStream) => {
-                            remoteVideoRef.current.srcObject = remoteStream;
-                        });
-                    });
-                }
+            const response = await axios.post("/start-class", {
+                room_id: "your-room-id", // Replace with actual room ID logic
+                host_peer_id: peer.id,
             });
+
+            setIsClassStarted(response.data.classStarted);
+            setRoomId(response.data.roomId);
+            setStatusMessage("Class started successfully!");
+
         } catch (error) {
-            console.error("Error starting the class:", error);
+            console.error("Error starting class:", error);
+            setStatusMessage("Failed to start class.");
         }
     };
 
-    const handleJoinClass = async (userId) => {
+    const handleJoinClass = async () => {
         try {
-            const response = await fetch("/join-call", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                },
-                body: JSON.stringify({ user_id: userId }),
+            if (!peer) return;
+            setStatusMessage("Joining class...");
+
+            const response = await axios.get(`/api/class-status?room_id=your-room-id`);
+            const { hostPeerId, roomId } = response.data;
+
+            setRemotePeerId(hostPeerId);
+            setRoomId(roomId);
+            setIsClassStarted(true);
+            setStatusMessage("Joined class successfully!");
+
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            videoRef.current.srcObject = stream;
+
+            const call = peer.call(hostPeerId, stream);
+            call.on("stream", (remoteStream) => {
+                remoteVideoRef.current.srcObject = remoteStream;
             });
 
-            if (!response.ok) throw new Error("Failed to join class");
-
-            const data = await response.json();
-            console.log("Joined class:", data);
-
-            setRemotePeerId(data.hostPeerId); // Set the host's peer ID
-
-            const stream = await startCamera();
-
-            // When the participant joins, they call the host's peer ID
-            if (data.hostPeerId) {
-                const call = peer.call(data.hostPeerId, stream); // Participant calls the host
-                call.on("stream", (remoteStream) => {
-                    remoteVideoRef.current.srcObject = remoteStream; // Assign the host's stream to the participant's video
-                });
-            }
         } catch (error) {
-            console.error("Error joining the class:", error);
-        }
-    };
-
-    const handleEndCall = async () => {
-        try {
-            if (!roomId) return;
-
-            const response = await fetch("/end-call", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": csrfToken,
-                },
-                body: JSON.stringify({ room_id: roomId }),
-            });
-
-            if (!response.ok) throw new Error("Failed to end call");
-
-            console.log("Call ended successfully");
-
-            if (videoRef.current?.srcObject) {
-                videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-            }
-            if (remoteVideoRef.current?.srcObject) {
-                remoteVideoRef.current.srcObject.getTracks().forEach(track => track.stop());
-            }
-
-            setIsClassStarted(false);
-            setStatusMessage("Class has ended.");
-            setRemotePeerId(null);
-            setIsHost(false);
-            setRoomId(null);
-
-            peer.destroy();
-        } catch (error) {
-            console.error("Error ending the call:", error);
+            console.error("Error joining class:", error);
+            setStatusMessage("Failed to join class.");
         }
     };
 
@@ -158,44 +96,65 @@ const VideoCall = ({ authUserId }) => {
             setIsClassStarted(false);
             setRemotePeerId(null);
             setRoomId(null);
+            setIsHost(false);
+            setStatusMessage("");
 
             peer.destroy();
         } catch (error) {
             console.error("Error leaving the call.");
         }
-    }
+    };
+
+    const handleEndCall = async () => {
+        try {
+            setStatusMessage("Ending class...");
+
+            await axios.post("/end-class", { room_id: roomId });
+
+            if (videoRef.current?.srcObject) {
+                videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+            }
+
+            setIsClassStarted(false);
+            setRemotePeerId(null);
+            setRoomId(null);
+            setIsHost(false);
+            setStatusMessage("Class ended successfully!");
+
+            peer.destroy();
+        } catch (error) {
+            console.error("Error ending the call.");
+            setStatusMessage("Failed to end class.");
+        }
+    };
 
     return (
         <div>
-            <h2>Video Call</h2>
-            {isClassStarted ? (
-                <p>{statusMessage}</p>
-            ) : (
+            <h1>Video Call</h1>
+            <p>{statusMessage}</p>
+
+            {!isClassStarted && (
                 <button onClick={handleStartClass}>Start Class</button>
             )}
-
-            <button onClick={() => handleJoinClass(authUserId)}>Join Class</button>
-
-            {isHost ? (
-                <button onClick={handleEndCall} className="bg-red-400 text-white rounded-md">
-                    End Call
-                </button>
-            ) : (
-                <button onClick={handleLeaveCall} className="bg-blue-400 text-white rounded-md">
-                    Leave Call
-                </button>
+            {!isClassStarted && (
+                <button onClick={handleJoinClass}>Join Class</button>
             )}
 
-            <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
-                <div>
-                    <h3>{isHost ? "Host's Camera" : "Your Camera"}</h3>
-                    <video ref={videoRef} autoPlay playsInline style={{ width: "300px", border: "1px solid black" }}></video>
-                </div>
+            {isClassStarted && (
+                <button onClick={handleLeaveCall}>Leave Call</button>
+            )}
+            {isHost && isClassStarted && (
+                <button onClick={handleEndCall}>End Class</button>
+            )}
 
-                <div>
-                    <h3>{isHost ? "Participant's Camera" : "Host's Camera"}</h3>
-                    <video ref={remoteVideoRef} autoPlay playsInline style={{ width: "300px", border: "1px solid red" }}></video>
-                </div>
+            <div>
+                <h2>Your Video</h2>
+                <video ref={videoRef} autoPlay muted></video>
+            </div>
+
+            <div>
+                <h2>Remote Video</h2>
+                <video ref={remoteVideoRef} autoPlay></video>
             </div>
         </div>
     );
