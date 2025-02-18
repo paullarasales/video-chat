@@ -9,10 +9,10 @@ class VideoCall extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['host_id', 'room_id', 'status'];
+    protected $fillable = ['host_id', 'room_id', 'status', 'host_peer_id'];
 
     public function host()
-    {
+    { 
         return $this->belongsTo(User::class, 'host_id');
     }
 

@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('host_id')->constrained('users')->onDelete('cascade');
             $table->string('room_id')->unique();
-            $table->enum('status', ['ongoing', 'ended'])->default('ongoing');
+            $table->string('host_peer_id')->nullable()->change();
+            $table->enum('status', ['pending', 'ongoing', 'ended'])->default('pending');
             $table->timestamps();
         });
     }

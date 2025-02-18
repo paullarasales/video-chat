@@ -6,8 +6,10 @@ const VideoCall = ({ authUserId }) => {
     const [isClassStarted, setIsClassStarted] = useState(false);
     const [statusMessage, setStatusMessage] = useState("");
     const [remotePeerId, setRemotePeerId] = useState(null);
+    const [isHost, setIsHost] = useState(false); // New state to track if the user is the host
     const videoRef = useRef(null);
     const remoteVideoRef = useRef(null);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
     useEffect(() => {
         const newPeer = new Peer(); // Initialize PeerJS
@@ -39,33 +41,38 @@ const VideoCall = ({ authUserId }) => {
 
     const handleStartClass = async () => {
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-            const response = await fetch("/start-call", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": csrfToken,
-                },
-            });
+            peer.on("open", async (id) => {
+                console.log("Host Peer ID:", id);
 
-            if (!response.ok) throw new Error("Failed to start class");
-
-            const data = await response.json();
-            setIsClassStarted(true);
-            setStatusMessage(data.message);
-
-            const stream = await startCamera();
-
-            // Store peer ID in the database so participants can connect
-            peer.on("open", (id) => {
-                fetch("/set-peer-id", {
+                const response = await fetch("/start-class", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         "X-CSRF-TOKEN": csrfToken,
                     },
-                    body: JSON.stringify({ user_id: authUserId, peerId: id }),
+                    body: JSON.stringify({ host_peer_id: id }),
                 });
+
+                if (!response.ok) throw new Error("Failed to start class");
+
+                const data = await response.json();
+                setIsClassStarted(true);
+                setStatusMessage(data.message);
+
+                // Start the host's camera
+                const stream = await startCamera();
+                videoRef.current.srcObject = stream;
+                setIsHost(true);
+
+                // Host starts calling participants (if any)
+                if (data.participantPeerIds) {
+                    data.participantPeerIds.forEach((participantPeerId) => {
+                        const call = peer.call(participantPeerId, stream);
+                        call.on("stream", (remoteStream) => {
+                            remoteVideoRef.current.srcObject = remoteStream;
+                        });
+                    });
+                }
             });
         } catch (error) {
             console.error("Error starting the class:", error);
@@ -88,20 +95,75 @@ const VideoCall = ({ authUserId }) => {
             const data = await response.json();
             console.log("Joined class:", data);
 
-            setRemotePeerId(data.hostPeerId);
+            setRemotePeerId(data.hostPeerId); // Set the host's peer ID
 
             const stream = await startCamera();
 
+            // When the participant joins, they call the host's peer ID
             if (data.hostPeerId) {
-                const call = peer.call(data.hostPeerId, stream);
+                const call = peer.call(data.hostPeerId, stream); // Participant calls the host
                 call.on("stream", (remoteStream) => {
-                    remoteVideoRef.current.srcObject = remoteStream;
+                    remoteVideoRef.current.srcObject = remoteStream; // Assign the host's stream to the participant's video
                 });
             }
         } catch (error) {
             console.error("Error joining the class:", error);
         }
     };
+
+    const handleEndCall = async () => {
+        try {
+            if (!roomId) return;
+
+            const response = await fetch("/end-call", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": csrfToken,
+                },
+                body: JSON.stringify({ room_id: roomId }),
+            });
+
+            if (!response.ok) throw new Error("Failed to end call");
+
+            console.log("Call ended successfully");
+
+            if (videoRef.current?.srcObject) {
+                videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+            }
+            if (remoteVideoRef.current?.srcObject) {
+                remoteVideoRef.current.srcObject.getTracks().forEach(track => track.stop());
+            }
+
+            setIsClassStarted(false);
+            setStatusMessage("Class has ended.");
+            setRemotePeerId(null);
+            setIsHost(false);
+            setRoomId(null);
+
+            peer.destroy();
+        } catch (error) {
+            console.error("Error ending the call:", error);
+        }
+    };
+
+    const handleLeaveCall = () => {
+        try {
+            console.log("Leaving call...");
+
+            if (videoRef.current?.srcObject) {
+                videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+            }
+
+            setIsClassStarted(false);
+            setRemotePeerId(null);
+            setRoomId(null);
+
+            peer.destroy();
+        } catch (error) {
+            console.error("Error leaving the call.");
+        }
+    }
 
     return (
         <div>
@@ -114,14 +176,24 @@ const VideoCall = ({ authUserId }) => {
 
             <button onClick={() => handleJoinClass(authUserId)}>Join Class</button>
 
+            {isHost ? (
+                <button onClick={handleEndCall} className="bg-red-400 text-white rounded-md">
+                    End Call
+                </button>
+            ) : (
+                <button onClick={handleLeaveCall} className="bg-blue-400 text-white rounded-md">
+                    Leave Call
+                </button>
+            )}
+
             <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
                 <div>
-                    <h3>Your Camera</h3>
+                    <h3>{isHost ? "Host's Camera" : "Your Camera"}</h3>
                     <video ref={videoRef} autoPlay playsInline style={{ width: "300px", border: "1px solid black" }}></video>
                 </div>
 
                 <div>
-                    <h3>Host's Camera</h3>
+                    <h3>{isHost ? "Participant's Camera" : "Host's Camera"}</h3>
                     <video ref={remoteVideoRef} autoPlay playsInline style={{ width: "300px", border: "1px solid red" }}></video>
                 </div>
             </div>

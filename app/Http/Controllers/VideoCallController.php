@@ -23,44 +23,9 @@ class VideoCallController extends Controller
         ]);
     }
 
-    public function requestVideoCall(Request $request, User $user)
-    {
-        $user->peerId = $request->peerId;
-        $user->fromUser = Auth::user();
-
-        broadcast(new RequestVideoCall($user));
-
-        return response()->json($user);
-    }
-
-    public function requestVideoCallStatus(Request $request, User $user)
-    {
-        $user->peerId = $request->peerId;
-        $user->fromUser = Auth::user();
-
-        broadcast(new RequestVideoCallStatus($user));
-        return response()->json($user);
-    }
-
-    public function startCall(Request $request)
-    {
-        $userId = auth()->user()->id;
-
-        $class = VideoCall::create([
-            'host_id' => $userId,
-            'room_id' => uniqid(),
-            'status' => 'ongoing'
-        ]);
-
-        $peerId = $request->peerId;
-        $class->update(['host_peer_id' => $peerId]);
-
-        broadcast(new ClassStartedEvent($userId));
-
-        return response()->json([
-            'message' => 'Class has started successfully',
-            'classStarted' => true,
-        ]);
+    public function startClass(Request $request)
+    {   
+       
     }
 
     public function joinCall(Request $request)
@@ -82,7 +47,7 @@ class VideoCallController extends Controller
 
         return response()->json([
             'message' => 'You have joined the class!',
-            'room_id' => $ongoingClass->room_id,
+            'hostPeerId' => $ongoingClass->host_peer_id,
         ]);
     }
 
@@ -96,30 +61,10 @@ class VideoCallController extends Controller
 
         if ($call) {
             $call->update(['status' => 'ended']);
-            broadcast(new VideoCallEvent($request->room_id, $request->user()));
-
-            return response()->json(['message' => 'Call ended']);
+            return response()->json(['message' => 'Call ended successfully']);
         }
 
         return response()->json(['message' => 'Call not found'], 404);
-    }
-
-    public function startClass(Request $request)
-    {
-        $userId = auth()->user()->id;
-
-        $class = VideoCall::create([
-            'host_id' => $userId,
-            'room_id' => uniqid(),
-            'status' => 'ongoing',
-        ]);
-
-        broadcast(new ClassStartedEvent($userId));
-
-        return response()->json([
-            'message' => 'Class has started successfully',
-            'classStarted' => true,
-        ]);
     }
 
     public function getClassStatus()

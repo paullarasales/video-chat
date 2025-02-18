@@ -33,9 +33,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/video-call', [VideoCallController::class, 'index'])->name('video-call');
-    Route::post('start-call', [VideoCallController::class, 'startClass']);
+    Route::post('start-class', [VideoCallController::class, 'startClass']);
     Route::post('/join-call', [VideoCallController::class, 'joinCall']);
+    Route::post('/end-call', [VideoCalllController::class, 'endcall']);
     Route::get('/api/class-status', [VideoCallController::class, 'getClassStatus']);
+
     Route::post('/video-call/request/{user}', [VideoCallController::class, 'requestVideoCall'])->name('video-call.request');
     Route::post('/video-call/request/status/{user}', [VideoCallController::class, 'requestVideoCallStatus'])->name('video-call.request-status');
 });
