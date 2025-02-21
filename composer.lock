@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3a18a4191d50a8d38851aa8d27681312",
+    "content-hash": "ef6798a494030d61d04d832f78146c4a",
     "packages": [
         {
             "name": "brick/math",
@@ -1853,6 +1853,87 @@
             "time": "2025-01-27T14:24:01+00:00"
         },
         {
+            "name": "laravel/valet",
+            "version": "v4.8.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel/valet.git",
+                "reference": "e2d6191446b8f06e32b955e402a2fc6de717fe62"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravel/valet/zipball/e2d6191446b8f06e32b955e402a2fc6de717fe62",
+                "reference": "e2d6191446b8f06e32b955e402a2fc6de717fe62",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^6.0|^7.4",
+                "illuminate/collections": "^8.0|^9.0|^10.0|^11.0",
+                "illuminate/container": "~5.1|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
+                "mnapoli/silly": "^1.5",
+                "php": "^7.1|^8.0",
+                "symfony/console": "^3.0|^4.0|^5.0|^6.0|^7.0",
+                "symfony/event-dispatcher": "^3.0|^4.0|^5.0|^6.0|^7.0",
+                "symfony/process": "^3.0|^4.0|^5.0|^6.0|^7.0"
+            },
+            "conflict": {
+                "mnapoli/silly": ">=1.8.1 <1.8.3"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.4",
+                "mockery/mockery": "^1.2.3",
+                "yoast/phpunit-polyfills": "^0.2.0"
+            },
+            "bin": [
+                "valet"
+            ],
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "4.x-dev"
+                }
+            },
+            "autoload": {
+                "files": [
+                    "cli/includes/compatibility.php",
+                    "cli/includes/facades.php",
+                    "cli/includes/helpers.php"
+                ],
+                "psr-4": {
+                    "Valet\\": "cli/Valet/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Taylor Otwell",
+                    "email": "taylor@laravel.com"
+                },
+                {
+                    "name": "Adam Wathan",
+                    "email": "adam.wathan@gmail.com"
+                },
+                {
+                    "name": "Matt Stauffer",
+                    "email": "matt@tighten.co"
+                }
+            ],
+            "description": "A more enjoyable local development experience for Mac.",
+            "keywords": [
+                "laravel",
+                "wwdhhd",
+                "zonda"
+            ],
+            "support": {
+                "issues": "https://github.com/laravel/valet/issues",
+                "source": "https://github.com/laravel/valet/tree/v4.8.2"
+            },
+            "time": "2024-12-20T21:19:04+00:00"
+        },
+        {
             "name": "league/commonmark",
             "version": "2.6.1",
             "source": {
@@ -2402,6 +2483,66 @@
                 }
             ],
             "time": "2024-12-08T08:18:47+00:00"
+        },
+        {
+            "name": "mnapoli/silly",
+            "version": "1.9.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mnapoli/silly.git",
+                "reference": "913d0bc5ff28c5a999d7476191e19be3d1afa04c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mnapoli/silly/zipball/913d0bc5ff28c5a999d7476191e19be3d1afa04c",
+                "reference": "913d0bc5ff28c5a999d7476191e19be3d1afa04c",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.4",
+                "php-di/invoker": "~2.0",
+                "psr/container": "^1.0|^2.0",
+                "symfony/console": "~3.0|~4.0|~5.0|~6.0|~7.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^2.12",
+                "mnapoli/phpunit-easymock": "~1.0",
+                "phpunit/phpunit": "^6.4|^7|^8|^9|^10"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Silly\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Silly CLI micro-framework based on Symfony Console",
+            "keywords": [
+                "PSR-11",
+                "cli",
+                "console",
+                "framework",
+                "micro-framework",
+                "silly"
+            ],
+            "support": {
+                "issues": "https://github.com/mnapoli/silly/issues",
+                "source": "https://github.com/mnapoli/silly/tree/1.9.1"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/mnapoli",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/mnapoli/silly",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2024-10-30T10:26:44+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -2995,6 +3136,61 @@
                 "source": "https://github.com/paragonie/sodium_compat/tree/v2.1.0"
             },
             "time": "2024-09-04T12:51:01+00:00"
+        },
+        {
+            "name": "php-di/invoker",
+            "version": "2.3.6",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PHP-DI/Invoker.git",
+                "reference": "59f15608528d8a8838d69b422a919fd6b16aa576"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PHP-DI/Invoker/zipball/59f15608528d8a8838d69b422a919fd6b16aa576",
+                "reference": "59f15608528d8a8838d69b422a919fd6b16aa576",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.3",
+                "psr/container": "^1.0|^2.0"
+            },
+            "require-dev": {
+                "athletic/athletic": "~0.1.8",
+                "mnapoli/hard-mode": "~0.3.0",
+                "phpunit/phpunit": "^9.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Invoker\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Generic and extensible callable invoker",
+            "homepage": "https://github.com/PHP-DI/Invoker",
+            "keywords": [
+                "callable",
+                "dependency",
+                "dependency-injection",
+                "injection",
+                "invoke",
+                "invoker"
+            ],
+            "support": {
+                "issues": "https://github.com/PHP-DI/Invoker/issues",
+                "source": "https://github.com/PHP-DI/Invoker/tree/2.3.6"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/mnapoli",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-01-17T12:49:27+00:00"
         },
         {
             "name": "phpoption/phpoption",
